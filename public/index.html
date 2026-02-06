@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شاشة العرض الاحترافية - مدرسة ابن دريد</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #0a2e1a;
+            --accent-gold: #d4af37;
+            --soft-gold: #f1d592;
+            --glass: rgba(0, 0, 0, 0.75);
+            --correct: #27ae60;
+            --wrong: #e74c3c;
+            --team1-color: #3498db;
+            --team2-color: #e67e22;
+        }
+
+        * { box-sizing: border-box; }
+        
+        body {
+            height: 100vh; margin: 0; padding: 0; overflow: hidden;
+            font-family: 'Cairo', sans-serif;
+            background: radial-gradient(circle at center, #1a472a 0%, #05140a 100%);
+            color: white;
+        }
+
+        /* شريط المعلومات العلوي */
+        .top-status-bar {
+            height: 18vh;
+            display: grid;
+            grid-template-columns: 1fr 200px 1fr;
+            align-items: center;
+            padding: 0 2vw;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            z-index: 100;
+        }
+
+        .team-top-card {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 15px 25px;
+            background: var(--glass);
+            border-radius: 20px;
+            border-bottom: 4px solid transparent;
+            transition: 0.5s;
+        }
+        .team-top-card.active { border-color: var(--accent-gold); box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3); transform: scale(1.02); }
+        .team-top-card.left { justify-content: flex-start; }
+        .team-top-card.right { justify-content: flex-end; flex-direction: row-reverse; }
+
+        .top-logo { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff; object-fit: cover; }
+        .top-name { font-size: 1.8rem; font-weight: 900; }
+        .top-score { font-size: 3.5rem; font-weight: 900; color: var(--accent-gold); min-width: 100px; text-align: center; }
+
+        .center-info { text-align: center; }
+        .timer-circle {
+            width: 110px; height: 110px; border-radius: 50%;
+            border: 6px solid var(--accent-gold);
+            background: #000; margin: 0 auto;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.8rem; font-weight: 900;
+        }
+        .timer-low { border-color: var(--wrong); color: var(--wrong); animation: blink 0.5s infinite; }
+
+        /* منطقة المحتوى الرئيسية */
+        .main-container {
+            height: 82vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* صندوق السؤال */
+        .question-box {
+            width: 85vw;
+            max-width: 1100px;
+            background: #fff;
+            color: #222;
+            border-radius: 40px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            min-height: 55vh;
+        }
+
+        .q-header { background: var(--primary-green); color: var(--accent-gold); padding: 15px; text-align: center; font-size: 1.5rem; font-weight: 900; }
+        .q-text { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 40px; text-align: center; font-size: 2.8rem; font-weight: 800; line-height: 1.3; }
+
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 30px; background: #f0f0f0; }
+        .option {
+            background: #fff; border: 4px solid #ddd; border-radius: 20px;
+            padding: 25px; font-size: 1.8rem; font-weight: 700; text-align: center;
+            position: relative; transition: 0.3s;
+        }
+        .option.correct { background: var(--correct) !important; color: white; border-color: #1e8449; }
+        .option.wrong { background: var(--wrong) !important; color: white; border-color: #922b21; }
+
+        /* بطاقات مستويات الجولة الثالثة */
+        .levels-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; width: 80%; padding: 20px; }
+        .level-card {
+            background: var(--glass); border: 3px solid var(--glass-light);
+            padding: 40px 20px; border-radius: 30px; text-align: center;
+            transition: 0.4s; backdrop-filter: blur(10px);
+        }
+        .level-card.active-pick { border-color: var(--accent-gold); transform: scale(1.1); box-shadow: 0 0 40px var(--accent-gold); }
+        .level-icon { font-size: 5rem; display: block; margin-bottom: 10px; }
+        .level-name { font-size: 2rem; font-weight: 900; color: #fff; }
+        .level-pts { color: var(--accent-gold); font-size: 1.5rem; font-weight: bold; }
+
+        /* شاشة النهاية والجدول */
+        #victory-screen {
+            position: fixed; inset: 0; background: radial-gradient(circle, #1a472a, #000);
+            z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .recap-table {
+            width: 70%; border-collapse: collapse; margin-top: 30px;
+            background: rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden;
+        }
+        .recap-table th, .recap-table td { padding: 25px; text-align: center; font-size: 1.8rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .recap-table th { background: var(--accent-gold); color: #000; font-weight: 900; }
+
+        .marker { position: absolute; top: -15px; width: 40px; height: 40px; border-radius: 50%; border: 4px solid #fff; display: none; }
+        .m1 { right: 20px; background: var(--team1-color); }
+        .m2 { left: 20px; background: var(--team2-color); }
+
+        @keyframes blink { 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+
+    <div id="victory-screen">
+        <h1 style="font-size: 4rem; color: var(--accent-gold);">🏆 النتائج النهائية 🏆</h1>
+        <table class="recap-table">
+            <thead>
+                <tr>
+                    <th>الفريق</th>
+                    <th>النقاط</th>
+                    <th>المركز</th>
+                </tr>
+            </thead>
+            <tbody id="final-recap-body"></tbody>
+        </table>
+        <button onclick="location.reload()" style="margin-top: 40px; padding: 15px 50px; font-family: 'Cairo'; cursor: pointer; font-size: 1.5rem; border-radius: 50px; background: var(--accent-gold); border: none; font-weight: 900;">إعادة المسابقة</button>
+    </div>
+
+    <header class="top-status-bar">
+        <div class="team-top-card left" id="box-group1">
+            <img id="display-logo1" class="top-logo" src="">
+            <div>
+                <div id="display-name1" class="top-name">الفريق 1</div>
+                <div id="display-score1" class="top-score">0</div>
+            </div>
+        </div>
+
+        <div class="center-info">
+            <div id="round-title" style="color: var(--accent-gold); font-weight: 900; margin-bottom: 5px;">الجولة</div>
+            <div class="timer-circle" id="display-timer">60</div>
+        </div>
+
+        <div class="team-top-card right" id="box-group2">
+            <img id="display-logo2" class="top-logo" src="">
+            <div>
+                <div id="display-name2" class="top-name" style="text-align: left;">الفريق 2</div>
+                <div id="display-score2" class="top-score">0</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="question-box" id="q-card">
+            <div class="q-header" id="display-category">سؤال التحدي</div>
+            <div class="q-text" id="display-q-text">بانتظار انطلاق المسابقة...</div>
+            <div id="display-options" class="options-grid"></div>
+            <div id="display-levels" class="levels-grid" style="display: none; margin: auto;">
+                <div class="level-card" id="lvl-normal">
+                    <span class="level-icon">🟢</span>
+                    <span class="level-name">عادي</span>
+                    <span class="level-pts">2 نقطة</span>
+                </div>
+                <div class="level-card" id="lvl-hard">
+                    <span class="level-icon">🟠</span>
+                    <span class="level-name">صعب</span>
+                    <span class="level-pts">5 نقاط</span>
+                </div>
+                <div class="level-card" id="lvl-super">
+                    <span class="level-icon">🔴</span>
+                    <span class="level-name">خارق</span>
+                    <span class="level-pts">10 نقاط</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <audio id="audio-buzz" src="https://assets.mixkit.co/active_storage/sfx/2959/2959-preview.mp3"></audio>
+    <audio id="audio-correct" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+    <audio id="audio-tick" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+    <audio id="audio-win" src="https://assets.mixkit.co/active_storage/sfx/1433/1433-preview.mp3"></audio>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let oldState = null;
+
+        const roundNames = ["", "جولة التناوب", "جولة السرعة", "جولة التحدي"];
+
+        socket.on('timerUpdate', (t) => {
+            const el = document.getElementById('display-timer');
+            el.innerText = t;
+            if(t <= 10 && t > 0) {
+                el.classList.add('timer-low');
+                document.getElementById('audio-tick').play();
+            } else {
+                el.classList.remove('timer-low');
+            }
+        });
+
+        socket.on('gameStateUpdate', (state) => {
+            if (state.isGameOver) {
+                showFinalRecap(state);
+                return;
+            }
+
+            // تحديث الشريط العلوي
+            document.getElementById('round-title').innerText = roundNames[state.activeRound] || "مسابقة ابن دريد";
+            document.getElementById('display-score1').innerText = state.teams.group1.score;
+            document.getElementById('display-score2').innerText = state.teams.group2.score;
+            document.getElementById('display-name1').innerText = state.teams.group1.name;
+            document.getElementById('display-name2').innerText = state.teams.group2.name;
+            document.getElementById('display-logo1').src = state.teams.group1.logo || 'https://via.placeholder.com/80';
+            document.getElementById('display-logo2').src = state.teams.group2.logo || 'https://via.placeholder.com/80';
+
+            // حالة الدور النشط
+            document.getElementById('box-group1').className = 'team-top-card left' + 
+                ((state.currentTurn === 'group1' || state.buzzerWinner === 'group1') ? ' active' : '');
+            document.getElementById('box-group2').className = 'team-top-card right' + 
+                ((state.currentTurn === 'group2' || state.buzzerWinner === 'group2') ? ' active' : '');
+
+            // صوت البازر
+            if (oldState && state.buzzerWinner && !oldState.buzzerWinner) document.getElementById('audio-buzz').play();
+            if (oldState && state.revealAnswer && !oldState.revealAnswer) document.getElementById('audio-correct').play();
+
+            renderMainArea(state);
+            oldState = state;
+        });
+
+        function renderMainArea(state) {
+            const qText = document.getElementById('display-q-text');
+            const optionsDiv = document.getElementById('display-options');
+            const levelsDiv = document.getElementById('display-levels');
+
+            // إذا كنا في الجولة 3 ولم يتم اختيار مستوى بعد
+            if (state.activeRound === 3 && !state.currentQuestion) {
+                qText.innerText = "بانتظار اختيار مستوى التحدي من الفريق...";
+                optionsDiv.style.display = 'none';
+                levelsDiv.style.display = 'grid';
+                
+                // تمييز المستوى المختار إذا وجد في الـ state
+                document.getElementById('lvl-normal').className = 'level-card' + (state.selectedLevel === 'normal' ? ' active-pick' : '');
+                document.getElementById('lvl-hard').className = 'level-card' + (state.selectedLevel === 'hard' ? ' active-pick' : '');
+                document.getElementById('lvl-super').className = 'level-card' + (state.selectedLevel === 'super' ? ' active-pick' : '');
+                return;
+            }
+
+            // العرض الطبيعي للسؤال
+            levelsDiv.style.display = 'none';
+            optionsDiv.style.display = 'grid';
+            
+            const q = state.currentQuestion;
+            if (!q) {
+                qText.innerText = "جاهزون للتحدي؟";
+                optionsDiv.innerHTML = '';
+                return;
+            }
+
+            qText.innerText = q.question;
+            document.getElementById('display-category').innerText = q.category || "سؤال المسابقة";
+            
+            optionsDiv.innerHTML = '';
+            q.options.forEach((opt, idx) => {
+                const div = document.createElement('div');
+                div.className = 'option';
+                div.innerText = opt;
+
+                if (state.revealAnswer) {
+                    if (idx === q.answer) div.classList.add('correct');
+                    else if (state.selections.group1 === idx || state.selections.group2 === idx) div.classList.add('wrong');
+                }
+
+                const m1 = document.createElement('div'); m1.className = 'marker m1';
+                if (state.selections.group1 === idx) m1.style.display = 'block';
+                const m2 = document.createElement('div'); m2.className = 'marker m2';
+                if (state.selections.group2 === idx) m2.style.display = 'block';
+
+                div.append(m1, m2);
+                optionsDiv.appendChild(div);
+            });
+        }
+
+        function showFinalRecap(state) {
+            const body = document.getElementById('final-recap-body');
+            const s1 = state.teams.group1;
+            const s2 = state.teams.group2;
+            
+            const teams = [
+                { name: s1.name, score: s1.score },
+                { name: s2.name, score: s2.score }
+            ].sort((a, b) => b.score - a.score);
+
+            body.innerHTML = teams.map((t, idx) => `
+                <tr>
+                    <td>${t.name}</td>
+                    <td style="color: var(--accent-gold); font-weight: 900;">${t.score}</td>
+                    <td>${idx === 0 ? '🏆 المركز الأول' : '🥈 المركز الثاني'}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('victory-screen').style.display = 'flex';
+            document.getElementById('audio-win').play();
+        }
+    </script>
+</body>
+</html>

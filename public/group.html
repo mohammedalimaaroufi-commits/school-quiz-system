@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>جهاز المتسابق - مدرسة ابن دريد</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #143621; --accent-gold: #d4af37;
+            --danger: #ff4757; --success: #2ed573; --bg-dark: #05140a;
+            --selected-blue: #1e90ff;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body { 
+            height: 100vh; margin: 0; padding: 0; overflow: hidden;
+            background: var(--bg-dark); color: white; font-family: 'Cairo', sans-serif;
+            display: flex; flex-direction: column;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            height: 10vh; background: rgba(0,0,0,0.8);
+            border-bottom: 3px solid var(--accent-gold);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; z-index: 10;
+        }
+        #team-name { font-size: 1.1rem; font-weight: 900; color: var(--accent-gold); }
+        #timer-box { 
+            background: #000; padding: 5px 15px; border-radius: 10px;
+            font-size: 1.5rem; font-weight: 900; border: 2px solid var(--accent-gold);
+        }
+
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 20px; }
+
+        /* Buzzer - تصميم تلفزيوني ضخم */
+        .buzzer-wrapper { position: relative; width: 220px; height: 220px; display: none; }
+        .buzzer-btn {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: radial-gradient(#ff4b2b, #b20000);
+            border: 10px solid #fff; box-shadow: 0 15px 0 #800000, 0 20px 40px rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.5rem; font-weight: 900; color: white; cursor: pointer; transition: 0.1s;
+        }
+        .buzzer-btn:active { transform: translateY(10px); box-shadow: 0 5px 0 #800000; }
+
+        /* Options & Levels Grid */
+        .options-grid { width: 100%; max-width: 500px; display: none; grid-template-columns: 1fr; gap: 12px; }
+        
+        .opt-btn {
+            background: #1a1a1a; border: 2px solid #333; border-radius: 15px;
+            padding: 18px; color: white; font-size: 1.2rem; font-weight: 700;
+            transition: 0.2s; position: relative; text-align: center;
+        }
+        
+        /* تأثير عند الضغط الأول للاختيار */
+        .opt-btn.highlighted { border-color: var(--selected-blue); background: rgba(30, 144, 255, 0.2); }
+        .opt-btn.highlighted::after {
+            content: "تأكيد الإرسال؟ ✅"; position: absolute; inset: 0;
+            background: var(--selected-blue); display: flex; align-items: center; 
+            justify-content: center; border-radius: 12px; font-weight: 900;
+        }
+
+        /* Status & Turn Info */
+        .status-box {
+            background: rgba(255,255,255,0.05); border: 2px dashed #444;
+            padding: 30px; border-radius: 20px; text-align: center; width: 100%;
+        }
+        .active-turn { color: var(--accent-gold); animation: pulse 1.5s infinite; font-weight: 900; font-size: 1.3rem; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+        /* Victory / Game Over */
+        #game-over-view { display: none; text-align: center; padding: 40px; }
+        .victory-icon { font-size: 5rem; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div id="team-name">تحميل...</div>
+        <div id="timer-box">60</div>
+    </div>
+
+    <div class="main-content">
+        <div id="game-over-view">
+            <div class="victory-icon">🏆</div>
+            <h2 style="color:var(--accent-gold)">انتهت المنافسة!</h2>
+            <p>شكراً لمشاركتكم، ترقبوا النتيجة النهائية على الشاشة الرئيسية.</p>
+        </div>
+
+        <div id="status-container" class="status-box">
+            <div id="status-msg">بانتظار انطلاق المسابقة...</div>
+        </div>
+
+        <div id="buzzer-area" class="buzzer-wrapper">
+            <div class="buzzer-btn" id="main-buzzer">إضغط!</div>
+        </div>
+
+        <div id="options-area" class="options-grid"></div>
+
+        <div id="levels-area" class="options-grid">
+            <h3 style="text-align:center; color:var(--accent-gold); margin-bottom:15px;">اختر مستوى التحدي لفريقك:</h3>
+            <button class="opt-btn" style="border-color: #2ecc71; background: rgba(46, 204, 113, 0.1);" onclick="pickLevel('normal')">
+                <span style="font-size: 1.5rem;">🟢 عادي</span><br>
+                <small>+2 / -2 نقطة</small>
+            </button>
+            <button class="opt-btn" style="border-color: #f1c40f; background: rgba(241, 196, 15, 0.1);" onclick="pickLevel('hard')">
+                <span style="font-size: 1.5rem;">🟠 صعب</span><br>
+                <small>+5 / -5 نقاط</small>
+            </button>
+            <button class="opt-btn" style="border-color: #e74c3c; background: rgba(231, 76, 60, 0.1);" onclick="pickLevel('super')">
+                <span style="font-size: 1.5rem;">🔴 خارق</span><br>
+                <small>+10 / -10 نقاط</small>
+            </button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const params = new URLSearchParams(window.location.search);
+        const myTeam = params.get('team') || 'group1';
+        let lastSelectedIdx = null;
+
+        function vibrate() { if (window.navigator.vibrate) window.navigator.vibrate(60); }
+
+        socket.on('timerUpdate', (t) => {
+            document.getElementById('timer-box').innerText = t;
+        });
+
+        socket.on('gameStateUpdate', (state) => {
+            if (state.isGameOver) {
+                document.getElementById('status-container').style.display = 'none';
+                document.getElementById('game-over-view').style.display = 'block';
+                return;
+            }
+
+            const teamData = state.teams[myTeam];
+            document.getElementById('team-name').innerText = "فريق: " + teamData.name;
+            
+            const buzzer = document.getElementById('buzzer-area');
+            const options = document.getElementById('options-area');
+            const levels = document.getElementById('levels-area');
+            const status = document.getElementById('status-container');
+            const statusMsg = document.getElementById('status-msg');
+
+            // إخفاء كل العناصر أولاً
+            [buzzer, options, levels, status].forEach(el => el.style.display = 'none');
+
+            // --- منطق الجولة الأولى والثالثة (نظام الأدوار) ---
+            if (state.activeRound === 1 || state.activeRound === 3) {
+                if (state.currentTurn === myTeam) {
+                    if (state.currentQuestion) {
+                        options.style.display = 'grid';
+                        renderOptions(state);
+                    } else if (state.activeRound === 3) {
+                        levels.style.display = 'grid'; // عرض مستويات الجولة الثالثة
+                    } else {
+                        status.style.display = 'block';
+                        statusMsg.innerText = "دورك الآن.. بانتظار السؤال";
+                        statusMsg.className = "active-turn";
+                    }
+                } else {
+                    status.style.display = 'block';
+                    statusMsg.innerText = "انتظر دور الفريق المنافس...";
+                    statusMsg.className = "";
+                }
+            } 
+            // --- منطق الجولة الثانية (نظام البازر) ---
+            else if (state.activeRound === 2) {
+                if (!state.buzzerWinner && !state.wrongAnswers[myTeam]) {
+                    buzzer.style.display = 'block';
+                } else if (state.buzzerWinner === myTeam) {
+                    options.style.display = 'grid';
+                    renderOptions(state);
+                } else {
+                    status.style.display = 'block';
+                    statusMsg.innerText = state.wrongAnswers[myTeam] ? "للأسف إجابة خاطئة!" : "الفرصة عند الخصم حالياً";
+                }
+            }
+        });
+
+        function renderOptions(state) {
+            const container = document.getElementById('options-area');
+            const q = state.currentQuestion;
+            container.innerHTML = '';
+            
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'opt-btn' + (lastSelectedIdx === idx ? ' highlighted' : '');
+                btn.innerText = opt;
+
+                btn.onclick = () => {
+                    if (state.revealAnswer) return;
+                    vibrate();
+                    if (lastSelectedIdx === idx) {
+                        socket.emit('submitAnswer', { teamId: myTeam, answerIdx: idx });
+                        lastSelectedIdx = null;
+                    } else {
+                        lastSelectedIdx = idx;
+                        socket.emit('updateSelection', { teamId: myTeam, answerIdx: idx });
+                        renderOptions(state);
+                    }
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function pickLevel(level) {
+            vibrate();
+            socket.emit('selectLevel', { team: myTeam, level: level });
+            // سيقوم السيرفر بتحديث الحالة وإظهار السؤال المناسب لاحقاً
+        }
+
+        document.getElementById('main-buzzer').onclick = () => {
+            vibrate();
+            socket.emit('pressBuzzer', myTeam);
+        };
+    </script>
+</body>
+</html>
