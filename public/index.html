@@ -3,326 +3,707 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شاشة العرض الاحترافية - مدرسة ابن دريد</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>المسابقة الثقافية الاحترافية - مدرسة ابن دريد</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
+        /* ========================================
+           1. المتغيرات والتنسيقات الجمالية (CSS Variables)
+           ========================================
+        */
         :root {
             --primary-green: #0a2e1a;
             --accent-gold: #d4af37;
             --soft-gold: #f1d592;
-            --glass: rgba(0, 0, 0, 0.75);
+            --glass: rgba(0, 0, 0, 0.8);
             --correct: #27ae60;
             --wrong: #e74c3c;
             --team1-color: #3498db;
             --team2-color: #e67e22;
+            --danger: #c0392b;
+            --card-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            --transition-smooth: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --angle: 0deg; /* لتأثير الأفعى */
         }
 
-        * { box-sizing: border-box; }
+        /* ========================================
+           2. التنسيق العام للجسم (Body & Reset)
+           ========================================
+        */
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
         
         body {
-            height: 100vh; margin: 0; padding: 0; overflow: hidden;
+            height: 100vh; width: 100vw; overflow: hidden;
             font-family: 'Cairo', sans-serif;
             background: radial-gradient(circle at center, #1a472a 0%, #05140a 100%);
-            color: white;
+            color: white; display: flex; flex-direction: column;
+            user-select: none;
         }
 
-        /* شريط المعلومات العلوي */
-        .top-status-bar {
-            height: 18vh;
-            display: grid;
-            grid-template-columns: 1fr 200px 1fr;
-            align-items: center;
-            padding: 0 2vw;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
-            z-index: 100;
+        /* حاوية النقاط المتطايرة */
+        #particle-container {
+            position: fixed; inset: 0; pointer-events: none; z-index: 10000;
         }
 
-        .team-top-card {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            padding: 15px 25px;
-            background: var(--glass);
-            border-radius: 20px;
-            border-bottom: 4px solid transparent;
-            transition: 0.5s;
+        /* ========================================
+           3. شاشات الإعلانات والنهاية (Overlays)
+           ========================================
+        */
+        #round-announcement {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0, 0, 0, 0.9); display: none;
+            align-items: center; justify-content: center;
+            flex-direction: column; pointer-events: none;
         }
-        .team-top-card.active { border-color: var(--accent-gold); box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3); transform: scale(1.02); }
-        .team-top-card.left { justify-content: flex-start; }
-        .team-top-card.right { justify-content: flex-end; flex-direction: row-reverse; }
-
-        .top-logo { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff; object-fit: cover; }
-        .top-name { font-size: 1.8rem; font-weight: 900; }
-        .top-score { font-size: 3.5rem; font-weight: 900; color: var(--accent-gold); min-width: 100px; text-align: center; }
-
-        .center-info { text-align: center; }
-        .timer-circle {
-            width: 110px; height: 110px; border-radius: 50%;
-            border: 6px solid var(--accent-gold);
-            background: #000; margin: 0 auto;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 2.8rem; font-weight: 900;
-        }
-        .timer-low { border-color: var(--wrong); color: var(--wrong); animation: blink 0.5s infinite; }
-
-        /* منطقة المحتوى الرئيسية */
-        .main-container {
-            height: 82vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+        .announcement-content { text-align: center; transform: scale(0.5); opacity: 0; }
+        .announcement-active .announcement-content { animation: roundFadeInOut 2.5s forwards; }
+        
+        @keyframes roundFadeInOut {
+            0% { transform: scale(0.5) translateY(50px); opacity: 0; }
+            20% { transform: scale(1.1) translateY(0); opacity: 1; }
+            80% { transform: scale(1) translateY(0); opacity: 1; }
+            100% { transform: scale(1.2) translateY(-50px); opacity: 0; }
         }
 
-        /* صندوق السؤال */
-        .question-box {
-            width: 85vw;
-            max-width: 1100px;
-            background: #fff;
-            color: #222;
-            border-radius: 40px;
-            overflow: hidden;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-            display: flex;
-            flex-direction: column;
-            min-height: 55vh;
-        }
-
-        .q-header { background: var(--primary-green); color: var(--accent-gold); padding: 15px; text-align: center; font-size: 1.5rem; font-weight: 900; }
-        .q-text { flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 40px; text-align: center; font-size: 2.8rem; font-weight: 800; line-height: 1.3; }
-
-        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 30px; background: #f0f0f0; }
-        .option {
-            background: #fff; border: 4px solid #ddd; border-radius: 20px;
-            padding: 25px; font-size: 1.8rem; font-weight: 700; text-align: center;
-            position: relative; transition: 0.3s;
-        }
-        .option.correct { background: var(--correct) !important; color: white; border-color: #1e8449; }
-        .option.wrong { background: var(--wrong) !important; color: white; border-color: #922b21; }
-
-        /* بطاقات مستويات الجولة الثالثة */
-        .levels-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; width: 80%; padding: 20px; }
-        .level-card {
-            background: var(--glass); border: 3px solid var(--glass-light);
-            padding: 40px 20px; border-radius: 30px; text-align: center;
-            transition: 0.4s; backdrop-filter: blur(10px);
-        }
-        .level-card.active-pick { border-color: var(--accent-gold); transform: scale(1.1); box-shadow: 0 0 40px var(--accent-gold); }
-        .level-icon { font-size: 5rem; display: block; margin-bottom: 10px; }
-        .level-name { font-size: 2rem; font-weight: 900; color: #fff; }
-        .level-pts { color: var(--accent-gold); font-size: 1.5rem; font-weight: bold; }
-
-        /* شاشة النهاية والجدول */
+        /* شاشة الفوز النهائية */
         #victory-screen {
             position: fixed; inset: 0; background: radial-gradient(circle, #1a472a, #000);
-            z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
+            animation: fadeIn 1s ease-out;
         }
-        .recap-table {
-            width: 70%; border-collapse: collapse; margin-top: 30px;
-            background: rgba(255,255,255,0.05); border-radius: 20px; overflow: hidden;
-        }
-        .recap-table th, .recap-table td { padding: 25px; text-align: center; font-size: 1.8rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .recap-table th { background: var(--accent-gold); color: #000; font-weight: 900; }
 
-        .marker { position: absolute; top: -15px; width: 40px; height: 40px; border-radius: 50%; border: 4px solid #fff; display: none; }
+        .winner-display-container {
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+        }
+
+        .winner-video-circle {
+            width: 380px; height: 380px; border-radius: 50%;
+            border: 10px solid var(--accent-gold); overflow: hidden;
+            box-shadow: 0 0 80px var(--accent-gold);
+            background: #000; position: relative;
+        }
+
+        .winner-video-circle video {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+
+        /* ========================================
+           4. الهيدر (Header Section)
+           ========================================
+        */
+        .main-header {
+            flex: 0 0 10vh; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            padding: 0 50px; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid var(--accent-gold); z-index: 100;
+        }
+        .school-info h1 { font-size: 1.8rem; font-weight: 900; letter-spacing: 1px; }
+        .ramadan-logo { font-size: 2rem; font-weight: 900; color: var(--soft-gold); text-shadow: 0 0 15px var(--accent-gold); }
+
+        /* ========================================
+           5. منطقة السكور (Scoreboard Section)
+           ========================================
+        */
+        .scores-section {
+            flex: 0 0 20vh; display: flex; justify-content: center; align-items: center;
+            padding: 0 40px; gap: 30px;
+        }
+
+        .score-card {
+            background: var(--glass); padding: 15px 30px; border-radius: 100px;
+            border: 3px solid rgba(255,255,255,0.1); display: flex; align-items: center;
+            justify-content: space-between; flex: 1; max-width: 500px; height: 120px;
+            transition: var(--transition-smooth);
+            position: relative;
+        }
+
+        .score-card.active { 
+            border-color: var(--accent-gold); box-shadow: 0 0 40px var(--accent-gold); 
+            transform: scale(1.05); background: rgba(212, 175, 55, 0.15);
+        }
+
+        /* انيميشن اهتزاز السكور عند الربح */
+        @keyframes scoreBump {
+            0% { transform: scale(1.05); }
+            50% { transform: scale(1.2); filter: brightness(1.5); }
+            100% { transform: scale(1.05); }
+        }
+        .bump { animation: scoreBump 0.5s ease-out; }
+
+        .team-img { 
+            width: 90px; height: 90px; border-radius: 50%; 
+            border: 4px solid var(--accent-gold); background: #fff; object-fit: cover;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+        }
+
+        .points { font-size: 4rem; font-weight: 900; color: var(--accent-gold); text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .team-name { font-size: 1.8rem; font-weight: 800; flex: 1; text-align: center; margin: 0 15px; }
+
+        /* ========================================
+           6. المؤقت (Timer & Progress Section)
+           ========================================
+        */
+        .timer-container { position: relative; width: 140px; height: 140px; flex-shrink: 0; }
+        .timer-svg { transform: rotate(-90deg); width: 140px; height: 140px; }
+        .timer-circle-bg { fill: rgba(0,0,0,0.6); stroke: rgba(255,255,255,0.1); stroke-width: 10; }
+        .timer-circle-progress {
+            fill: none; stroke: var(--accent-gold); stroke-width: 12; stroke-linecap: round;
+            stroke-dasharray: 339.29; stroke-dashoffset: 0; 
+            transition: stroke-dashoffset 1s linear, stroke 0.4s;
+        }
+        .timer-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+        #display-timer { font-size: 3.5rem; font-weight: 900; color: white; line-height: 1; }
+
+        /* ========================================
+           7. الصندوق الرئيسي (Question Box Area)
+           ========================================
+        */
+        .main-content { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 40px; position: relative; }
+        
+        .question-box { 
+            width: 100%; max-width: 1250px; height: 58vh; 
+            background: white; border-radius: 40px; 
+            display: flex; flex-direction: column; 
+            box-shadow: var(--card-shadow); overflow: hidden;
+            transition: all 0.5s ease; position: relative;
+        }
+
+        .q-points-badge {
+            position: absolute; top: 25px; left: 25px; background: var(--accent-gold);
+            color: var(--primary-green); padding: 10px 30px; border-radius: 20px;
+            font-weight: 900; font-size: 1.8rem; z-index: 50; box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        .q-header { 
+            background: var(--primary-green); color: var(--accent-gold); 
+            padding: 20px; text-align: center; font-weight: 900; font-size: 1.8rem; 
+            border-bottom: 4px solid var(--accent-gold);
+        }
+        .q-text { 
+            flex: 1; padding: 30px 60px; display: flex; align-items: center; justify-content: center; 
+            text-align: center; font-size: 2.8rem; font-weight: 800; color: #2c3e50; line-height: 1.4;
+        }
+
+        /* خيارات السؤال */
+        .options-grid { 
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; 
+            padding: 25px; background: #f0f2f5; border-top: 2px solid #ddd;
+        }
+        
+        .option { 
+            background: white; border: 4px solid #e0e0e0; padding: 20px; 
+            border-radius: 25px; font-size: 1.8rem; font-weight: 700; 
+            text-align: center; position: relative; color: #333; transition: 0.3s;
+            overflow: hidden;
+        }
+
+        /* تأثير الأفعى المحيط بالخيار المختار */
+        .option.selected-snake::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            background: conic-gradient(from var(--angle), transparent 70%, var(--snake-color) 100%);
+            animation: rotateSnake 1.5s linear infinite;
+            z-index: 1;
+        }
+        .option.selected-snake::after {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            background: white;
+            border-radius: 20px;
+            z-index: 2;
+        }
+        .option .opt-content { position: relative; z-index: 3; }
+
+        @property --angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+        @keyframes rotateSnake {
+            to { --angle: 360deg; }
+        }
+
+        .option.correct { background: var(--correct) !important; color: white; border-color: #1e8449; animation: correctPulse 1s; z-index: 10; }
+        .option.correct::after { background: var(--correct) !important; }
+        .option.wrong { background: var(--wrong) !important; color: white; border-color: #a93226; }
+        .option.wrong::after { background: var(--wrong) !important; }
+
+        /* ماركرات الفرق */
+        .marker { position: absolute; top: -15px; width: 45px; height: 45px; border-radius: 50%; border: 4px solid white; display: none; z-index: 20; }
         .m1 { right: 20px; background: var(--team1-color); }
         .m2 { left: 20px; background: var(--team2-color); }
 
-        @keyframes blink { 50% { opacity: 0.5; } }
+        /* النقاط المتطايرة */
+        .score-particle {
+            position: fixed;
+            width: 15px; height: 15px;
+            background: var(--accent-gold);
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 10px var(--accent-gold);
+            z-index: 10001;
+        }
+
+        /* ========================================
+           8. شريط التقدم (Progress Bar Section)
+           ========================================
+        */
+        .progress-section { width: 100%; max-width: 1250px; margin-top: 25px; }
+        .progress-labels { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .progress-labels span { font-weight: 800; color: var(--soft-gold); font-size: 1.1rem; }
+        
+        .progress-bar-container { display: flex; gap: 15px; width: 100%; height: 16px; }
+        .progress-step {
+            flex: 1; background: rgba(255,255,255,0.1); border-radius: 10px; 
+            overflow: hidden; border: 1px solid rgba(255,255,255,0.2); position: relative;
+        }
+        .progress-step.active { border-color: var(--accent-gold); box-shadow: 0 0 15px rgba(212,175,55,0.3); }
+        .progress-fill {
+            height: 100%; width: 0%; background: var(--accent-gold);
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 20px var(--accent-gold);
+        }
+
+        /* ========================================
+           9. قسم التحدي (Round 3 Level Selection)
+           ========================================
+        */
+        .level-selection-container {
+            width: 100%; height: 100%; display: flex; flex-direction: column;
+            background: #f4f6f9; align-items: center; justify-content: center; padding: 30px;
+        }
+        .lvl-card {
+            flex: 1; background: white; border-radius: 35px; padding: 40px 25px;
+            display: flex; flex-direction: column; align-items: center; gap: 20px;
+            border: 5px solid #eee; transition: var(--transition-smooth);
+        }
+        .lvl-card.selected { transform: translateY(-20px); box-shadow: 0 30px 50px rgba(0,0,0,0.15); border-color: var(--accent-gold); }
+
+        /* ========================================
+           10. الحركات والأنيميشن (Animations)
+           ========================================
+        */
+        @keyframes correctPulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes bounceIn { 0% { transform: scale(0); } 70% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* ========================================
+           11. التذييل (Footer)
+           ========================================
+        */
+        .footer {
+            flex: 0 0 6vh; background: rgba(0,0,0,0.8);
+            display: flex; align-items: center; justify-content: center;
+            border-top: 1px solid var(--accent-gold); font-size: 1.2rem;
+        }
+        .footer span { color: var(--accent-gold); font-weight: 900; margin: 0 5px; }
+
+        #unlock-audio { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 99999; display: flex; align-items: center; justify-content: center; font-size: 3.5rem; color: white; cursor: pointer; text-align: center; padding: 40px; }
     </style>
 </head>
 <body>
 
-    <div id="victory-screen">
-        <h1 style="font-size: 4rem; color: var(--accent-gold);">🏆 النتائج النهائية 🏆</h1>
-        <table class="recap-table">
-            <thead>
-                <tr>
-                    <th>الفريق</th>
-                    <th>النقاط</th>
-                    <th>المركز</th>
-                </tr>
-            </thead>
-            <tbody id="final-recap-body"></tbody>
-        </table>
-        <button onclick="location.reload()" style="margin-top: 40px; padding: 15px 50px; font-family: 'Cairo'; cursor: pointer; font-size: 1.5rem; border-radius: 50px; background: var(--accent-gold); border: none; font-weight: 900;">إعادة المسابقة</button>
+    <div id="unlock-audio">🌙 اضغط هنا لبدء الأمسية الرمضانية <br><small style="font-size: 1.5rem;">(مدرسة ابن دريد ترحب بكم)</small></div>
+    <div id="particle-container"></div>
+
+    <div id="round-announcement">
+        <div class="announcement-content">
+            <div style="color: var(--accent-gold); font-size: 3rem; font-weight: 700;">نحن الآن في</div>
+            <div id="round-name-display" class="round-name-text">الجولة الأولى</div>
+        </div>
     </div>
 
-    <header class="top-status-bar">
-        <div class="team-top-card left" id="box-group1">
-            <img id="display-logo1" class="top-logo" src="">
-            <div>
-                <div id="display-name1" class="top-name">الفريق 1</div>
-                <div id="display-score1" class="top-score">0</div>
+    <div id="victory-screen">
+        <div class="winner-display-container">
+            <div class="winner-video-circle">
+                <video id="final-celebration-video" autoplay loop muted></video>
             </div>
+            <h1 id="winner-text-main" style="font-size: 5rem; color: var(--accent-gold); text-shadow: 0 0 30px rgba(212,175,55,0.5);">مبروك للفائز!</h1>
+            
+            <table class="recap-table" style="width: 800px; margin-top: 30px; font-size: 2.5rem; text-align: center;">
+                <thead style="background: var(--accent-gold); color: black;">
+                    <tr><th>الفريق</th><th>مجموع النقاط</th><th>المركز</th></tr>
+                </thead>
+                <tbody id="recap-rows"></tbody>
+            </table>
+            
+            <button onclick="location.reload()" style="margin-top: 40px; padding: 20px 80px; font-size: 2rem; border-radius: 50px; background: var(--accent-gold); border: none; font-weight: 900; cursor: pointer; transition: 0.3s;">إغلاق المسابقة</button>
         </div>
+    </div>
 
-        <div class="center-info">
-            <div id="round-title" style="color: var(--accent-gold); font-weight: 900; margin-bottom: 5px;">الجولة</div>
-            <div class="timer-circle" id="display-timer">60</div>
+    <header class="main-header">
+        <div class="school-info">
+            <h1>مدرسة ابن دريد للتعليم الأساسي (5-8)</h1>
+            <h2 style="color: var(--soft-gold); font-size: 1.2rem; margin-top: 5px;">اللجنة الثقافية - 2026م</h2>
         </div>
-
-        <div class="team-top-card right" id="box-group2">
-            <img id="display-logo2" class="top-logo" src="">
-            <div>
-                <div id="display-name2" class="top-name" style="text-align: left;">الفريق 2</div>
-                <div id="display-score2" class="top-score">0</div>
-            </div>
-        </div>
+        <div class="ramadan-logo">🌟 رَمَضانُ يَجمَعُنا 🌟</div>
     </header>
 
-    <main class="main-container">
-        <div class="question-box" id="q-card">
-            <div class="q-header" id="display-category">سؤال التحدي</div>
-            <div class="q-text" id="display-q-text">بانتظار انطلاق المسابقة...</div>
-            <div id="display-options" class="options-grid"></div>
-            <div id="display-levels" class="levels-grid" style="display: none; margin: auto;">
-                <div class="level-card" id="lvl-normal">
-                    <span class="level-icon">🟢</span>
-                    <span class="level-name">عادي</span>
-                    <span class="level-pts">2 نقطة</span>
+    <section class="scores-section">
+        <div class="score-card" id="card1">
+            <span id="score-val1" class="points">0</span>
+            <span id="name-val1" class="team-name">الفريق الأول</span>
+            <img id="logo-val1" class="team-img" src="" alt="Logo">
+        </div>
+
+        <div class="timer-container">
+            <svg class="timer-svg" viewBox="0 0 120 120">
+                <circle class="timer-circle-bg" cx="60" cy="60" r="54"/>
+                <circle id="timer-fill-stroke" class="timer-circle-progress" cx="60" cy="60" r="54"/>
+            </svg>
+            <div class="timer-text">
+                <span id="display-timer">60</span>
+            </div>
+        </div>
+
+        <div class="score-card" id="card2">
+            <img id="logo-val2" class="team-img" src="" alt="Logo">
+            <span id="name-val2" class="team-name">الفريق الثاني</span>
+            <span id="score-val2" class="points">0</span>
+        </div>
+    </section>
+
+    <main class="main-content">
+        <div class="question-box" id="qBox">
+            <div class="q-points-badge" id="pts-badge" style="display: none;">
+                <span id="pts-val">0</span> نقطة
+            </div>
+
+            <div id="question-view" style="display: flex; flex-direction: column; height: 100%;">
+                <div class="q-header" id="q-category">بانتظار انطلاق التحدي...</div>
+                <div class="q-text" id="q-text-content">هل أنتم مستعدون للتنافس؟</div>
+                <div class="options-grid" id="q-options-container"></div>
+            </div>
+
+            <div id="level-view" style="display: none; height: 100%;">
+                <div class="level-selection-container">
+                    <h2 style="font-size: 2.5rem; color: #333; margin-bottom: 30px;">اختر مستوى التحدي</h2>
+                    <div style="display: flex; gap: 30px; width: 100%; max-width: 1000px;">
+                        <div class="lvl-card" id="lvl-normal">
+                            <span style="font-size: 5rem;">🟢</span>
+                            <h3 style="font-size: 2rem; color: #333;">عادي</h3>
+                            <div style="background: #27ae60; color: white; padding: 10px 30px; border-radius: 30px; font-weight: 800;">+2 نقطة</div>
+                        </div>
+                        <div class="lvl-card" id="lvl-hard">
+                            <span style="font-size: 5rem;">🟠</span>
+                            <h3 style="font-size: 2rem; color: #333;">صعب</h3>
+                            <div style="background: #e67e22; color: white; padding: 10px 30px; border-radius: 30px; font-weight: 800;">+5 نقاط</div>
+                        </div>
+                        <div class="lvl-card" id="lvl-super">
+                            <span style="font-size: 5rem;">🔴</span>
+                            <h3 style="font-size: 2rem; color: #333;">خارق</h3>
+                            <div style="background: #c0392b; color: white; padding: 10px 30px; border-radius: 30px; font-weight: 800;">+10 نقاط</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="level-card" id="lvl-hard">
-                    <span class="level-icon">🟠</span>
-                    <span class="level-name">صعب</span>
-                    <span class="level-pts">5 نقاط</span>
-                </div>
-                <div class="level-card" id="lvl-super">
-                    <span class="level-icon">🔴</span>
-                    <span class="level-name">خارق</span>
-                    <span class="level-pts">10 نقاط</span>
-                </div>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-labels">
+                <span id="lbl1">جولة التناوب (0/8)</span>
+                <span id="lbl2">جولة السرعة (0/6)</span>
+                <span id="lbl3">جولة التحدي (0/12)</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-step" id="step1"><div class="progress-fill" id="fill1"></div></div>
+                <div class="progress-step" id="step2"><div class="progress-fill" id="fill2"></div></div>
+                <div class="progress-step" id="step3"><div class="progress-fill" id="fill3"></div></div>
             </div>
         </div>
     </main>
 
-    <audio id="audio-buzz" src="https://assets.mixkit.co/active_storage/sfx/2959/2959-preview.mp3"></audio>
-    <audio id="audio-correct" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
-    <audio id="audio-tick" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
-    <audio id="audio-win" src="https://assets.mixkit.co/active_storage/sfx/1433/1433-preview.mp3"></audio>
+    <footer class="footer">
+        تصميم وتطوير <span>أ. محمد علي المعروفي</span> - جميع الحقوق محفوظة لمدرسة ابن دريد 2026
+    </footer>
+
+    <audio id="snd-correct" src="media/correct.mp3"></audio>
+    <audio id="snd-wrong" src="media/wrong.mp3"></audio>
+    <audio id="snd-tick" src="media/tick.mp3"></audio>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+        /** * ========================================
+         * 12. المنطق البرمجي (JavaScript Engine)
+         * ========================================
+         */
         const socket = io();
-        let oldState = null;
+        let lastKnownRound = null;
+        let lastScores = { group1: 0, group2: 0 };
+        const PROGRESS_TOTALS = { 1: 8, 2: 6, 3: 12 };
 
-        const roundNames = ["", "جولة التناوب", "جولة السرعة", "جولة التحدي"];
+        // عناصر الواجهة
+        const timerStroke = document.getElementById('timer-fill-stroke');
+        const unlockBtn = document.getElementById('unlock-audio');
 
-        socket.on('timerUpdate', (t) => {
-            const el = document.getElementById('display-timer');
-            el.innerText = t;
-            if(t <= 10 && t > 0) {
-                el.classList.add('timer-low');
-                document.getElementById('audio-tick').play();
-            } else {
-                el.classList.remove('timer-low');
-            }
-        });
+        unlockBtn.onclick = () => unlockBtn.style.display = 'none';
 
+        /**
+         * تحديث الحالة العامة للمسابقة
+         */
         socket.on('gameStateUpdate', (state) => {
+            if (!state) return;
+
             if (state.isGameOver) {
-                showFinalRecap(state);
+                renderVictory(state);
                 return;
             }
 
-            // تحديث الشريط العلوي
-            document.getElementById('round-title').innerText = roundNames[state.activeRound] || "مسابقة ابن دريد";
-            document.getElementById('display-score1').innerText = state.teams.group1.score;
-            document.getElementById('display-score2').innerText = state.teams.group2.score;
-            document.getElementById('display-name1').innerText = state.teams.group1.name;
-            document.getElementById('display-name2').innerText = state.teams.group2.name;
-            document.getElementById('display-logo1').src = state.teams.group1.logo || 'https://via.placeholder.com/80';
-            document.getElementById('display-logo2').src = state.teams.group2.logo || 'https://via.placeholder.com/80';
-
-            // حالة الدور النشط
-            document.getElementById('box-group1').className = 'team-top-card left' + 
-                ((state.currentTurn === 'group1' || state.buzzerWinner === 'group1') ? ' active' : '');
-            document.getElementById('box-group2').className = 'team-top-card right' + 
-                ((state.currentTurn === 'group2' || state.buzzerWinner === 'group2') ? ' active' : '');
-
-            // صوت البازر
-            if (oldState && state.buzzerWinner && !oldState.buzzerWinner) document.getElementById('audio-buzz').play();
-            if (oldState && state.revealAnswer && !oldState.revealAnswer) document.getElementById('audio-correct').play();
-
-            renderMainArea(state);
-            oldState = state;
+            checkRoundChange(state.activeRound);
+            updateScoreBoard(state);
+            updateProgressBar(state);
+            handleMainView(state);
         });
 
-        function renderMainArea(state) {
-            const qText = document.getElementById('display-q-text');
-            const optionsDiv = document.getElementById('display-options');
-            const levelsDiv = document.getElementById('display-levels');
-
-            // إذا كنا في الجولة 3 ولم يتم اختيار مستوى بعد
-            if (state.activeRound === 3 && !state.currentQuestion) {
-                qText.innerText = "بانتظار اختيار مستوى التحدي من الفريق...";
-                optionsDiv.style.display = 'none';
-                levelsDiv.style.display = 'grid';
-                
-                // تمييز المستوى المختار إذا وجد في الـ state
-                document.getElementById('lvl-normal').className = 'level-card' + (state.selectedLevel === 'normal' ? ' active-pick' : '');
-                document.getElementById('lvl-hard').className = 'level-card' + (state.selectedLevel === 'hard' ? ' active-pick' : '');
-                document.getElementById('lvl-super').className = 'level-card' + (state.selectedLevel === 'super' ? ' active-pick' : '');
-                return;
-            }
-
-            // العرض الطبيعي للسؤال
-            levelsDiv.style.display = 'none';
-            optionsDiv.style.display = 'grid';
-            
+        /**
+         * إدارة عرض المحتوى (سؤال أم مستويات)
+         */
+        function handleMainView(state) {
+            const qView = document.getElementById('question-view');
+            const lView = document.getElementById('level-view');
             const q = state.currentQuestion;
-            if (!q) {
-                qText.innerText = "جاهزون للتحدي؟";
-                optionsDiv.innerHTML = '';
-                return;
+
+            if (state.activeRound === 3 && !q) {
+                qView.style.display = 'none';
+                lView.style.display = 'flex';
+                updateLevelSelectionUI(state.selectedLevel);
+                document.getElementById('pts-badge').style.display = 'none';
+            } else {
+                qView.style.display = 'flex';
+                lView.style.display = 'none';
+                if (q) renderQuestion(state, q);
+                else resetQuestionBox();
+            }
+        }
+
+        /**
+         * رندر السؤال والخيارات
+         */
+        function renderQuestion(state, q) {
+            document.getElementById('q-text-content').innerText = q.question;
+            document.getElementById('q-category').innerText = q.category || "سؤال ثقافي";
+            
+            const badge = document.getElementById('pts-badge');
+            if (q.points) {
+                badge.style.display = 'block';
+                document.getElementById('pts-val').innerText = q.points;
             }
 
-            qText.innerText = q.question;
-            document.getElementById('display-category').innerText = q.category || "سؤال المسابقة";
-            
-            optionsDiv.innerHTML = '';
+            const container = document.getElementById('q-options-container');
+            container.innerHTML = '';
+
             q.options.forEach((opt, idx) => {
                 const div = document.createElement('div');
                 div.className = 'option';
-                div.innerText = opt;
+                div.innerHTML = `<div class="opt-content">${opt}</div>`;
 
-                if (state.revealAnswer) {
-                    if (idx === q.answer) div.classList.add('correct');
-                    else if (state.selections.group1 === idx || state.selections.group2 === idx) div.classList.add('wrong');
+                // إضافة ماركرات الفرق
+                const marker1 = document.createElement('div'); marker1.className = 'marker m1';
+                const marker2 = document.createElement('div'); marker2.className = 'marker m2';
+                
+                // تأثير الأفعى
+                if (state.selections.group1 === idx) {
+                    div.classList.add('selected-snake');
+                    div.style.setProperty('--snake-color', 'var(--team1-color)');
+                    marker1.style.display = 'block';
+                }
+                if (state.selections.group2 === idx) {
+                    div.classList.add('selected-snake');
+                    div.style.setProperty('--snake-color', 'var(--team2-color)');
+                    marker2.style.display = 'block';
                 }
 
-                const m1 = document.createElement('div'); m1.className = 'marker m1';
-                if (state.selections.group1 === idx) m1.style.display = 'block';
-                const m2 = document.createElement('div'); m2.className = 'marker m2';
-                if (state.selections.group2 === idx) m2.style.display = 'block';
+                div.appendChild(marker1); div.appendChild(marker2);
 
-                div.append(m1, m2);
-                optionsDiv.appendChild(div);
+                // كشف الإجابة
+                if (state.revealAnswer) {
+                    if (idx === q.answer) {
+                        div.classList.add('correct');
+                        if (state.selections.group1 === idx || state.selections.group2 === idx) {
+                            document.getElementById('snd-correct').play().catch(()=>{});
+                            // إذا كانت الإجابة صحيحة، أطلق النقاط
+                            const winnerId = state.selections.group1 === idx ? 'card1' : 'card2';
+                            spawnParticles(div, winnerId);
+                        }
+                    } else if (state.selections.group1 === idx || state.selections.group2 === idx) {
+                        div.classList.add('wrong');
+                        document.getElementById('snd-wrong').play().catch(()=>{});
+                    }
+                }
+                container.appendChild(div);
             });
         }
 
-        function showFinalRecap(state) {
-            const body = document.getElementById('final-recap-body');
-            const s1 = state.teams.group1;
-            const s2 = state.teams.group2;
+        /**
+         * وظيفة إطلاق النقاط المتطايرة
+         */
+        function spawnParticles(sourceEl, targetId) {
+            const container = document.getElementById('particle-container');
+            const targetEl = document.getElementById(targetId);
+            const sourceRect = sourceEl.getBoundingClientRect();
+            const targetRect = targetEl.getBoundingClientRect();
+
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const p = document.createElement('div');
+                    p.className = 'score-particle';
+                    p.style.left = (sourceRect.left + sourceRect.width / 2) + 'px';
+                    p.style.top = (sourceRect.top + sourceRect.height / 2) + 'px';
+                    container.appendChild(p);
+
+                    const destX = targetRect.left + targetRect.width / 2;
+                    const destY = targetRect.top + targetRect.height / 2;
+
+                    p.animate([
+                        { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+                        { transform: `translate(${destX - (sourceRect.left + sourceRect.width / 2)}px, ${destY - (sourceRect.top + sourceRect.height / 2)}px) scale(0.5)`, opacity: 0 }
+                    ], {
+                        duration: 800 + Math.random() * 400,
+                        easing: 'ease-in'
+                    }).onfinish = () => {
+                        p.remove();
+                        targetEl.classList.remove('bump');
+                        void targetEl.offsetWidth; // Trigger reflow
+                        targetEl.classList.add('bump');
+                    };
+                }, i * 60);
+            }
+        }
+
+        /**
+         * تحديث السكور والشعارات
+         */
+        function updateScoreBoard(state) {
+            document.getElementById('score-val1').innerText = state.teams.group1.score;
+            document.getElementById('name-val1').innerText = state.teams.group1.name;
+            if (state.teams.group1.logo) document.getElementById('logo-val1').src = state.teams.group1.logo;
+
+            document.getElementById('score-val2').innerText = state.teams.group2.score;
+            document.getElementById('name-val2').innerText = state.teams.group2.name;
+            if (state.teams.group2.logo) document.getElementById('logo-val2').src = state.teams.group2.logo;
+
+            document.getElementById('card1').classList.remove('active');
+            document.getElementById('card2').classList.remove('active');
             
+            if (state.buzzerWinner) {
+                document.getElementById(state.buzzerWinner === 'group1' ? 'card1' : 'card2').classList.add('active');
+            } else if (state.currentTurn) {
+                document.getElementById(state.currentTurn === 'group1' ? 'card1' : 'card2').classList.add('active');
+            }
+        }
+
+        /**
+         * شريط التقدم الفعلي
+         */
+        function updateProgressBar(state) {
+            const currentR = state.activeRound;
+            const currentQ = (state.currentQuestionIndex || 0) + 1;
+
+            for(let i=1; i<=3; i++) {
+                const fill = document.getElementById('fill' + i);
+                const lbl = document.getElementById('lbl' + i);
+                const step = document.getElementById('step' + i);
+                const totalInRound = PROGRESS_TOTALS[i];
+
+                step.classList.remove('active');
+
+                if (i < currentR) {
+                    fill.style.width = '100%';
+                } else if (i === currentR) {
+                    step.classList.add('active');
+                    const percent = (currentQ / totalInRound) * 100;
+                    fill.style.width = percent + '%';
+                    const names = ["التناوب", "السرعة", "التحدي"];
+                    lbl.innerText = `جولة ${names[i-1]} (${currentQ}/${totalInRound})`;
+                } else {
+                    fill.style.width = '0%';
+                }
+            }
+        }
+
+        /**
+         * إعلان الجولة
+         */
+        function checkRoundChange(round) {
+            if (round && round !== lastKnownRound) {
+                lastKnownRound = round;
+                const names = { 1: "جولة التناوب", 2: "جولة السرعة", 3: "جولة التحدي" };
+                document.getElementById('round-name-display').innerText = names[round];
+                const ann = document.getElementById('round-announcement');
+                ann.style.display = 'flex';
+                ann.classList.add('announcement-active');
+                setTimeout(() => {
+                    ann.classList.remove('announcement-active');
+                    ann.style.display = 'none';
+                }, 2500);
+            }
+        }
+
+        /**
+         * تحديث المؤقت
+         */
+        socket.on('timerUpdate', (time) => {
+            document.getElementById('display-timer').innerText = time;
+            const dashOffset = 339.29 - (time / 60) * 339.29;
+            timerStroke.style.strokeDashoffset = dashOffset;
+            
+            if (time <= 5 && time > 0) {
+                document.getElementById('snd-tick').play().catch(()=>{});
+            }
+        });
+
+        /**
+         * اختيار المستويات (UI)
+         */
+        function updateLevelSelectionUI(level) {
+            document.querySelectorAll('.lvl-card').forEach(c => c.classList.remove('selected'));
+            if (level) {
+                const card = document.getElementById('lvl-' + level);
+                if (card) card.classList.add('selected');
+            }
+        }
+
+        /**
+         * عرض شاشة الفوز النهائية
+         */
+        function renderVictory(state) {
+            const screen = document.getElementById('victory-screen');
+            const video = document.getElementById('final-celebration-video');
+            const winnerText = document.getElementById('winner-text-main');
+            const recapBody = document.getElementById('recap-rows');
+
+            const g1 = state.teams.group1;
+            const g2 = state.teams.group2;
+
             const teams = [
-                { name: s1.name, score: s1.score },
-                { name: s2.name, score: s2.score }
+                { name: g1.name, score: g1.score, video: g1.video },
+                { name: g2.name, score: g2.score, video: g2.video }
             ].sort((a, b) => b.score - a.score);
 
-            body.innerHTML = teams.map((t, idx) => `
-                <tr>
-                    <td>${t.name}</td>
-                    <td style="color: var(--accent-gold); font-weight: 900;">${t.score}</td>
-                    <td>${idx === 0 ? '🏆 المركز الأول' : '🥈 المركز الثاني'}</td>
+            recapBody.innerHTML = teams.map((t, i) => `
+                <tr style="animation: bounceIn ${0.5 + i*0.3}s forwards">
+                    <td style="padding: 20px;">${t.name}</td>
+                    <td>${t.score}</td>
+                    <td style="color: #d4af37; font-weight: 900;">${i === 0 ? '🥇 المركز الأول' : '🥈 المركز الثاني'}</td>
                 </tr>
             `).join('');
 
-            document.getElementById('victory-screen').style.display = 'flex';
-            document.getElementById('audio-win').play();
+            if (teams[0].video) {
+                video.src = teams[0].video;
+                video.muted = false;
+                video.play();
+            }
+            
+            winnerText.innerText = `🏆 مبروك لفريق ${teams[0].name} 🏆`;
+            screen.style.display = 'flex';
         }
+
+        function resetQuestionBox() {
+            document.getElementById('q-text-content').innerText = "جاهزون للسؤال التالي؟";
+            document.getElementById('q-options-container').innerHTML = '';
+            document.getElementById('pts-badge').style.display = 'none';
+        }
+
     </script>
 </body>
 </html>
